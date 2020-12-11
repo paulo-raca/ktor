@@ -120,7 +120,7 @@ internal class CIOEngine(
         return endpoints.computeIfAbsent(endpointId) {
             val secure = (protocol.isSecure())
             Endpoint(
-                host, port, proxy != null, secure,
+                host, port, proxy, secure,
                 config,
                 connectionFactory, coroutineContext,
                 onDone = { endpoints.remove(endpointId) }
