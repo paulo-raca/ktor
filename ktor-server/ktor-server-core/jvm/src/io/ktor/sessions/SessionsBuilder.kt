@@ -21,11 +21,11 @@ public fun <S : Any> Sessions.Configuration.cookie(name: String, sessionType: KC
 /**
  * Configure sessions to get it from cookie using session [storage]
  */
+@OptIn(ExperimentalStdlibApi::class)
 public inline fun <reified S : Any> Sessions.Configuration.cookie(name: String, storage: SessionStorage) {
     val sessionType = S::class
 
-    @Suppress("DEPRECATION")
-    val builder = CookieIdSessionBuilder(sessionType)
+    val builder = CookieIdSessionBuilder(sessionType, typeOf<S>())
     cookie(name, builder, sessionType, storage)
 }
 
@@ -47,6 +47,7 @@ internal fun <S : Any> Sessions.Configuration.cookie(
  * The actual content of the session is stored at server side using the specified [storage].
  * The cookie configuration can be set inside [block] using the cookie property exposed by [CookieIdSessionBuilder].
  */
+@OptIn(ExperimentalStdlibApi::class)
 public inline fun <reified S : Any> Sessions.Configuration.cookie(
     name: String,
     storage: SessionStorage,
@@ -54,15 +55,14 @@ public inline fun <reified S : Any> Sessions.Configuration.cookie(
 ) {
     val sessionType = S::class
 
-    @Suppress("DEPRECATION")
-    val builder = CookieIdSessionBuilder(sessionType).apply(block)
+    val builder = CookieIdSessionBuilder(sessionType, typeOf<S>()).apply(block)
     cookie(name, builder, sessionType, storage)
 }
 
 /**
  * Configure sessions to get it from cookie using session [storage]
  */
-@Deprecated("Use reified types intead.")
+@Deprecated("Use reified types instead.")
 public inline fun <S : Any> Sessions.Configuration.cookie(
     name: String,
     sessionType: KClass<S>,
@@ -104,7 +104,6 @@ public inline fun <reified S : Any> Sessions.Configuration.header(
 ) {
     val sessionType = S::class
 
-    @Suppress("DEPRECATION")
     val builder = HeaderIdSessionBuilder(sessionType, typeOf<S>()).apply(block)
     header(name, sessionType, storage, builder)
 }
@@ -164,7 +163,6 @@ public fun <S : Any> Sessions.Configuration.cookie(name: String, sessionType: KC
 public inline fun <reified S : Any> Sessions.Configuration.cookie(name: String) {
     val sessionType = S::class
 
-    @Suppress("DEPRECATION")
     val builder = CookieSessionBuilder(sessionType, typeOf<S>())
     cookie(name, sessionType, builder)
 }
@@ -181,7 +179,6 @@ public inline fun <reified S : Any> Sessions.Configuration.cookie(
 ) {
     val sessionType = S::class
 
-    @Suppress("DEPRECATION")
     val builder = CookieSessionBuilder(sessionType, typeOf<S>()).apply(block)
     cookie(name, sessionType, builder)
 }
@@ -241,7 +238,6 @@ public inline fun <reified S : Any> Sessions.Configuration.header(
 ) {
     val sessionType = S::class
 
-    @Suppress("DEPRECATION")
     val builder = HeaderSessionBuilder(sessionType, typeOf<S>()).apply(block)
     header(name, sessionType, null, builder)
 }
@@ -267,11 +263,16 @@ public inline fun <S : Any> Sessions.Configuration.header(
 /**
  * Cookie session configuration builder
  */
-@Suppress("DEPRECATION")
 public class CookieIdSessionBuilder<S : Any>
-@Deprecated("Use builder functions instead.")
-constructor(type: KClass<S>) :
-    CookieSessionBuilder<S>(type) {
+@PublishedApi
+internal constructor(
+    type: KClass<S>,
+    typeInfo: KType
+) : CookieSessionBuilder<S>(type, typeInfo) {
+
+    @Deprecated("Use builder functions instead.")
+    public constructor(type: KClass<S>) : this(type, type.starProjectedType)
+
     /**
      * Register session ID generation function
      */
@@ -361,7 +362,6 @@ internal constructor(
 /**
  * Header session configuration builder
  */
-@Suppress("DEPRECATION")
 public class HeaderIdSessionBuilder<S : Any>
 @PublishedApi
 internal constructor(

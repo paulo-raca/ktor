@@ -1620,6 +1620,7 @@ public final class io/ktor/sessions/CookieConfiguration {
 
 public final class io/ktor/sessions/CookieIdSessionBuilder : io/ktor/sessions/CookieSessionBuilder {
 	public fun <init> (Lkotlin/reflect/KClass;)V
+	public fun <init> (Lkotlin/reflect/KClass;Lkotlin/reflect/KType;)V
 	public final fun getSessionIdProvider ()Lkotlin/jvm/functions/Function0;
 	public final fun identity (Lkotlin/jvm/functions/Function0;)V
 }
