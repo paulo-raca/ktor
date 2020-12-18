@@ -14,6 +14,8 @@ import kotlin.reflect.*
 import kotlin.reflect.full.*
 import kotlin.reflect.jvm.*
 
+private const val TYPE_TOKEN_PARAMETER_NAME: String = "\$type"
+
 /**
  * Creates the the default [SessionSerializer] for type [T]
  */
@@ -103,10 +105,9 @@ public class SessionSerializerReflection<T : Any> internal constructor(
 
     private fun <T : Any> findParticularType(type: KClass<T>, bundle: StringValues): KClass<out T> {
         if (type.isSealed) {
-            val typeToken = bundle["\$type"] ?: error("No typeToken found for sealed $type")
-            val particularType = type.sealedSubclasses.firstOrNull { it.simpleName == typeToken }
+            val typeToken = bundle[TYPE_TOKEN_PARAMETER_NAME] ?: error("No typeToken found for sealed $type")
+            return type.sealedSubclasses.firstOrNull { it.simpleName == typeToken }
                 ?: error("No sealed subclass $typeToken found in $type")
-            return particularType
         }
         if (type.isAbstract) {
             error("Abstract types are not supported: $type")
@@ -118,14 +119,14 @@ public class SessionSerializerReflection<T : Any> internal constructor(
     private fun <T : Any> findConstructor(type: KClass<T>, bundle: StringValues): KFunction<T> {
         if (type.isSealed) {
             val particularType = findParticularType(type, bundle)
-            val filtered = bundle.filter { key, _ -> key != "\$type" }
+            val filtered = bundle.filter { key, _ -> key != TYPE_TOKEN_PARAMETER_NAME }
             return findConstructor(particularType, filtered)
         }
         if (type.isAbstract) {
             error("Abstract types are not supported: $type")
         }
 
-        bundle["\$type"]?.let { typeName ->
+        bundle[TYPE_TOKEN_PARAMETER_NAME]?.let { typeName ->
             require(type.simpleName == typeName)
         }
 
@@ -383,7 +384,7 @@ public class SessionSerializerReflection<T : Any> internal constructor(
         }
 
         if (type.simpleName != null && type.superclasses.any { it.isSealed }) {
-            bundle += Pair("\$type", type.simpleName!!)
+            bundle += Pair(TYPE_TOKEN_PARAMETER_NAME, type.simpleName!!)
         }
 
         return bundle.formUrlEncode()
