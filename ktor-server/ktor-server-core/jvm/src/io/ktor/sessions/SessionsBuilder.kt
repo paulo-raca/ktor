@@ -96,6 +96,7 @@ public inline fun <reified S : Any> Sessions.Configuration.header(name: String, 
  * Configures a session using a header with the specified [name] using it as a session id.
  * The actual content of the session is stored at server side using the specified [storage].
  */
+@OptIn(ExperimentalStdlibApi::class)
 public inline fun <reified S : Any> Sessions.Configuration.header(
     name: String,
     storage: SessionStorage,
@@ -104,7 +105,7 @@ public inline fun <reified S : Any> Sessions.Configuration.header(
     val sessionType = S::class
 
     @Suppress("DEPRECATION")
-    val builder = HeaderIdSessionBuilder(sessionType).apply(block)
+    val builder = HeaderIdSessionBuilder(sessionType, typeOf<S>()).apply(block)
     header(name, sessionType, storage, builder)
 }
 
@@ -159,11 +160,12 @@ public fun <S : Any> Sessions.Configuration.cookie(name: String, sessionType: KC
 /**
  * Configure sessions to serialize to/from HTTP cookie
  */
+@OptIn(ExperimentalStdlibApi::class)
 public inline fun <reified S : Any> Sessions.Configuration.cookie(name: String) {
     val sessionType = S::class
 
     @Suppress("DEPRECATION")
-    val builder = CookieSessionBuilder(sessionType)
+    val builder = CookieSessionBuilder(sessionType, typeOf<S>())
     cookie(name, sessionType, builder)
 }
 
@@ -172,6 +174,7 @@ public inline fun <reified S : Any> Sessions.Configuration.cookie(name: String) 
  * optionally transformed by specified transforms in [block].
  * The cookie configuration can be set inside [block] using the cookie property exposed by [CookieIdSessionBuilder].
  */
+@OptIn(ExperimentalStdlibApi::class)
 public inline fun <reified S : Any> Sessions.Configuration.cookie(
     name: String,
     block: CookieSessionBuilder<S>.() -> Unit
@@ -179,7 +182,7 @@ public inline fun <reified S : Any> Sessions.Configuration.cookie(
     val sessionType = S::class
 
     @Suppress("DEPRECATION")
-    val builder = CookieSessionBuilder(sessionType).apply(block)
+    val builder = CookieSessionBuilder(sessionType, typeOf<S>()).apply(block)
     cookie(name, sessionType, builder)
 }
 
@@ -231,6 +234,7 @@ public inline fun <reified S : Any> Sessions.Configuration.header(name: String) 
  * Configures a session using a header with the specified [name] using it for the actual session content
  * optionally transformed by specified transforms in [block].
  */
+@OptIn(ExperimentalStdlibApi::class)
 public inline fun <reified S : Any> Sessions.Configuration.header(
     name: String,
     block: HeaderSessionBuilder<S>.() -> Unit
@@ -238,7 +242,7 @@ public inline fun <reified S : Any> Sessions.Configuration.header(
     val sessionType = S::class
 
     @Suppress("DEPRECATION")
-    val builder = HeaderSessionBuilder(sessionType).apply(block)
+    val builder = HeaderSessionBuilder(sessionType, typeOf<S>()).apply(block)
     header(name, sessionType, null, builder)
 }
 
@@ -287,14 +291,18 @@ constructor(type: KClass<S>) :
  * @property type - session instance type
  */
 public open class CookieSessionBuilder<S : Any>
-@Deprecated("Use builder functions instead.")
-constructor(
-    public val type: KClass<S>
+@PublishedApi
+internal constructor(
+    public val type: KClass<S>,
+    public val typeInfo: KType
 ) {
+    @Deprecated("Use builder functions instead.")
+    public constructor(type: KClass<S>) : this(type, type.starProjectedType)
+
     /**
      * Session instance serializer
      */
-    public var serializer: SessionSerializer<S> = defaultSessionSerializer(type.starProjectedType)
+    public var serializer: SessionSerializer<S> = defaultSessionSerializer(typeInfo)
 
     private val _transformers = mutableListOf<SessionTransportTransformer>()
 
@@ -321,14 +329,19 @@ constructor(
  * @property type session instance type
  */
 public open class HeaderSessionBuilder<S : Any>
-@Deprecated("Use builder functions instead.")
-constructor(
-    public val type: KClass<S>
+@PublishedApi
+internal constructor(
+    public val type: KClass<S>,
+    public val typeInfo: KType
 ) {
+
+    @Deprecated("Use builder functions instead.")
+    public constructor(type: KClass<S>) : this(type, type.starProjectedType)
+
     /**
      * Session instance serializer
      */
-    public var serializer: SessionSerializer<S> = defaultSessionSerializer(type.starProjectedType)
+    public var serializer: SessionSerializer<S> = defaultSessionSerializer(typeInfo)
 
     private val _transformers = mutableListOf<SessionTransportTransformer>()
 
@@ -350,10 +363,15 @@ constructor(
  */
 @Suppress("DEPRECATION")
 public class HeaderIdSessionBuilder<S : Any>
-@Deprecated("Use builder functions instead.")
-constructor(type: KClass<S>) :
-    @Suppress("DEPRECATION")
-    HeaderSessionBuilder<S>(type) {
+@PublishedApi
+internal constructor(
+    type: KClass<S>,
+    typeInfo: KType
+) : HeaderSessionBuilder<S>(type, typeInfo) {
+
+    @Deprecated("Use builder functions instead.")
+    public constructor(type: KClass<S>) : this(type, type.starProjectedType)
+
     /**
      * Register session ID generation function
      */
